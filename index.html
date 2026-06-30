@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRUJULA - Foco, Concentracion y Plan de Accion</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+:root{
+  --ink:#0D1117;--ink2:#141B24;--ink3:#1C2530;--ink4:#252F3D;
+  --paper:#EDEAE0;--paper-dim:rgba(237,234,224,.62);--paper-faint:rgba(237,234,224,.22);
+  --mint:#3ED9B0;--mint-dim:rgba(62,217,176,.14);--mint-glow:rgba(62,217,176,.35);
+  --amber:#F2A93B;--amber-dim:rgba(242,169,59,.14);--amber-glow:rgba(242,169,59,.35);
+  --coral:#E8604C;--coral-dim:rgba(232,96,76,.14);
+  --indigo:#5B7FFF;--indigo-dim:rgba(91,127,255,.14);
+  --fd:'JetBrains Mono',monospace;--fb:'Space Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;min-height:100%;background:var(--ink);color:var(--paper);font-family:var(--fb);overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 45% at 15% 0%, rgba(62,217,176,.08) 0%,transparent 55%),
+    radial-gradient(ellipse 55% 40% at 100% 100%, rgba(242,169,59,.06) 0%,transparent 55%),
+    radial-gradient(ellipse 35% 30% at 50% 50%, rgba(91,127,255,.04) 0%,transparent 60%)}
+/* subtle compass-line texture */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(237,234,224,.025) 39px, rgba(237,234,224,.025) 40px);
+}
+
+#app{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}
+.screen{display:none;width:100%;max-width:760px;animation:fsIn .42s cubic-bezier(.22,.68,0,1.1) both}
+.screen.active{display:block}
+@keyframes fsIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+.mono{font-family:var(--fd)}
+.eyebrow{font-family:var(--fd);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mint)}
+.divider{width:42px;height:2px;background:var(--mint);margin:14px 0;border-radius:99px}
+.divider.center{margin-left:auto;margin-right:auto}
+
+/* progress - compass needle bar */
+.prog-wrap{margin-bottom:18px}
+.prog-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.prog-bar{height:2px;background:var(--paper-faint);position:relative}
+.prog-fill{height:100%;background:var(--mint);transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* timer - bracket style, not a circle */
+.timer-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0}
+.timer-bracket{font-family:var(--fd);font-size:2.2rem;font-weight:700;color:var(--mint);letter-spacing:.05em;
+  border:1.5px solid var(--mint);padding:4px 18px;border-radius:4px;min-width:84px;text-align:center;transition:color .25s,border-color .25s}
+.timer-bracket.warn{color:var(--amber);border-color:var(--amber)}
+.timer-bracket.danger{color:var(--coral);border-color:var(--coral);animation:tickPulse .5s ease infinite}
+@keyframes tickPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.timer-label{font-family:var(--fd);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--paper-dim)}
+
+/* no-timer indicator */
+.notimer-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--fd);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);
+  border:1px dashed var(--paper-faint);padding:6px 14px;border-radius:99px;margin:14px auto;width:fit-content}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:6px;font-family:var(--fb);font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .2s,filter .15s;position:relative}
+.btn:active{transform:scale(.96)!important}
+.btn-primary{background:var(--mint);color:var(--ink);font-size:1.05rem;padding:15px 34px;box-shadow:0 4px 26px var(--mint-glow)}
+.btn-primary:hover{box-shadow:0 6px 34px rgba(62,217,176,.5);transform:translateY(-2px)}
+.btn-ghost{background:transparent;color:var(--paper-dim);border:1px solid var(--paper-faint);font-size:.88rem;padding:10px 20px}
+.btn-ghost:hover{border-color:rgba(237,234,224,.4);color:var(--paper)}
+.btn-answer{width:100%;background:var(--ink3);color:var(--paper);border:1px solid rgba(237,234,224,.08);border-radius:8px;padding:16px 18px;font-size:.96rem;text-align:left;line-height:1.35;cursor:pointer;font-family:var(--fb);transition:background .2s,border-color .2s,transform .15s;margin-bottom:9px}
+.btn-answer:hover{background:var(--mint-dim);border-color:var(--mint);transform:translateX(4px)}
+
+/* q text */
+.q-text{font-family:var(--fb);font-weight:600;font-size:clamp(1.2rem,3.6vw,1.55rem);line-height:1.3;margin:16px 0 18px;color:var(--paper)}
+.q-meta{font-family:var(--fd);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mint);background:var(--mint-dim);border-left:2px solid var(--mint);padding:7px 12px;margin-bottom:14px;border-radius:0 4px 4px 0}
+
+/* MENU - map style modules instead of numbered cards */
+#screen-splash{text-align:center}
+.compass-icon{font-size:clamp(3rem,9vw,5rem);margin-bottom:8px;display:inline-block;animation:spin 8s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.splash-title{font-family:var(--fb);font-weight:700;font-size:clamp(2.2rem,7vw,3.6rem);color:var(--paper);line-height:1.05;letter-spacing:-.01em}
+.splash-title em{font-style:normal;color:var(--mint)}
+.splash-sub{font-family:var(--fd);font-size:.95rem;color:var(--paper-dim);letter-spacing:.02em;margin:14px 0 30px;line-height:1.6}
+
+.menu-all{width:100%;background:var(--mint);border:none;border-radius:10px;padding:18px 22px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;transition:box-shadow .2s,transform .15s}
+.menu-all:hover{box-shadow:0 8px 34px var(--mint-glow);transform:translateY(-2px)}
+.ma-name{font-family:var(--fb);font-weight:700;font-size:1.1rem;color:var(--ink)}
+.ma-desc{font-family:var(--fd);font-size:.72rem;color:rgba(13,17,23,.6);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+
+.sec-label{font-family:var(--fd);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--paper-dim);margin:6px 0 12px;text-align:center}
+.module-list{display:flex;flex-direction:column;gap:8px}
+.module{display:flex;align-items:center;gap:14px;background:var(--ink2);border:1px solid rgba(237,234,224,.07);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s,transform .15s;text-align:left}
+.module:hover{border-color:var(--mint);background:var(--ink3);transform:translateX(4px)}
+.mod-icon{font-size:1.5rem;width:38px;flex-shrink:0;text-align:center}
+.mod-body{flex:1}
+.mod-name{font-family:var(--fb);font-weight:700;font-size:.95rem;color:var(--paper)}
+.mod-desc{font-family:var(--fd);font-size:.72rem;color:var(--paper-dim);margin-top:2px}
+.mod-tag{font-family:var(--fd);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px;white-space:nowrap;flex-shrink:0}
+.mod-tag.timed{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(242,169,59,.3)}
+.mod-tag.open{background:var(--indigo-dim);color:var(--indigo);border:1px solid rgba(91,127,255,.3)}
+
+/* round transition */
+.rt{text-align:center}
+.rt-icon{font-size:2.4rem;display:block;margin-bottom:10px}
+.rt-eyebrow{font-family:var(--fd);font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mint)}
+.rt-title{font-family:var(--fb);font-weight:700;font-size:clamp(1.5rem,5vw,2.3rem);color:var(--paper);margin-top:6px}
+.rt-sub{font-family:var(--fd);font-size:.9rem;color:var(--paper-dim);margin:10px 0 28px}
+
+/* countdown */
+#cdOverlay{display:none;position:fixed;inset:0;z-index:999;background:rgba(13,17,23,.92);align-items:center;justify-content:center;flex-direction:column;gap:10px}
+#cdOverlay.on{display:flex}
+.cd-num{font-family:var(--fd);font-weight:700;font-size:clamp(5rem,16vw,8rem);color:var(--mint);animation:popIn .5s cubic-bezier(.17,.67,.4,1.4)}
+@keyframes popIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.cd-sub{font-family:var(--fd);font-size:.95rem;letter-spacing:.16em;text-transform:uppercase;color:var(--paper-dim)}
+
+/* slider scale (for foco/concentracion self rating) */
+.slider-wrap{margin:22px 0}
+.slider-track{position:relative;height:6px;background:var(--ink4);border-radius:99px;margin:0 4px}
+.slider-fill{height:100%;background:var(--mint);border-radius:99px;width:0%;transition:width .15s}
+.slider-input{width:100%;-webkit-appearance:none;appearance:none;height:6px;background:transparent;position:relative;top:-6px;cursor:pointer}
+.slider-input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--mint);border:3px solid var(--ink);box-shadow:0 0 0 2px var(--mint);cursor:pointer}
+.slider-labels{display:flex;justify-content:space-between;font-family:var(--fd);font-size:.68rem;color:var(--paper-dim);margin-top:6px;letter-spacing:.05em}
+.slider-value{text-align:center;font-family:var(--fd);font-weight:700;font-size:2.4rem;color:var(--mint);margin-bottom:6px}
+
+/* goal builder (text input style) */
+.goal-card{background:var(--ink2);border:1px solid rgba(237,234,224,.08);border-radius:10px;padding:18px}
+.goal-input{width:100%;background:var(--ink);border:1px solid rgba(237,234,224,.12);border-radius:7px;padding:12px 14px;color:var(--paper);font-family:var(--fb);font-size:.95rem;margin-top:8px;resize:none}
+.goal-input:focus{outline:none;border-color:var(--mint)}
+.goal-label{font-family:var(--fd);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mint)}
+
+/* priority pick - 4 quadrant style for accion */
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.quad-opt{padding:18px 14px;border:1.5px solid rgba(237,234,224,.1);border-radius:10px;background:var(--ink2);cursor:pointer;text-align:left;transition:all .2s}
+.quad-opt:hover{border-color:var(--mint);background:var(--mint-dim);transform:translateY(-2px)}
+.quad-opt .qo-icon{font-size:1.4rem;margin-bottom:6px}
+.quad-opt .qo-text{font-family:var(--fb);font-weight:600;font-size:.88rem;color:var(--paper)}
+.quad-opt .qo-sub{font-family:var(--fd);font-size:.68rem;color:var(--paper-dim);margin-top:3px}
+
+/* duel for elegi-ya style round */
+.duel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.btn-duel{display:flex;align-items:center;justify-content:center;padding:26px 14px;border:1.5px solid rgba(237,234,224,.1);border-radius:10px;background:var(--ink2);color:var(--paper);font-family:var(--fb);font-weight:700;font-size:1rem;text-align:center;line-height:1.25;cursor:pointer;transition:all .2s}
+.btn-duel:hover{background:var(--mint-dim);border-color:var(--mint);transform:scale(1.03)}
+.vs-badge{display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.1rem;color:var(--amber);grid-column:1/-1;padding:4px 0}
+
+/* result screens */
+.res-icon{font-size:2.4rem;display:block;text-align:center;margin-bottom:8px}
+.res-title{font-family:var(--fb);font-weight:700;font-size:clamp(1.4rem,4.5vw,2.1rem);color:var(--mint);text-align:center;margin-bottom:6px}
+.res-badge{background:var(--mint-dim);border-left:2px solid var(--mint);border-radius:0 6px 6px 0;padding:9px 14px;margin-bottom:16px;font-family:var(--fd);font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mint)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:16px 0}
+.stat-box{background:var(--ink2);border:1px solid rgba(237,234,224,.07);border-radius:9px;padding:14px 12px;text-align:center}
+.stat-num{font-family:var(--fd);font-weight:700;font-size:1.85rem;color:var(--mint)}
+.stat-lbl{font-family:var(--fd);font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--paper-dim);margin-top:3px}
+
+.rfx-title{font-family:var(--fd);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin:20px 0 10px}
+.rfx-q{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;background:var(--ink2);border-radius:8px;margin-bottom:7px;border-left:2px solid var(--amber)}
+.rfx-q .d{width:5px;height:5px;border-radius:50%;background:var(--amber);margin-top:8px;flex-shrink:0}
+.rfx-q p{font-family:var(--fb);font-size:.87rem;color:var(--paper-dim);line-height:1.5}
+.btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+
+/* goal output card */
+.action-output{background:var(--ink2);border:1px solid rgba(62,217,176,.25);border-radius:10px;padding:16px 18px;margin-top:14px}
+.action-output .ao-label{font-family:var(--fd);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mint);margin-bottom:5px}
+.action-output .ao-text{font-family:var(--fb);font-size:.95rem;color:var(--paper);line-height:1.4}
+
+/* tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--ink2);padding:4px;border-radius:8px;flex-wrap:wrap}
+.tab{flex:1;min-width:44px;padding:8px 5px;border:none;border-radius:6px;background:transparent;color:var(--paper-dim);font-family:var(--fd);font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s}
+.tab.active{background:var(--mint);color:var(--ink)}
+
+@keyframes flash{0%{opacity:1}40%{opacity:.25}100%{opacity:1}}
+.flash{animation:flash .26s ease}
+
+@media(max-width:480px){
+  .duel-grid,.quad-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .btn-row{flex-direction:column;align-items:center}
+  .module{padding:12px 14px}
+  .mod-icon{font-size:1.3rem;width:32px}
+}
+</style>
+</head>
+<body>
+
+<div id="cdOverlay">
+  <div class="cd-num" id="cdNum">3</div>
+  <div class="cd-sub">Centrate</div>
+</div>
+
+<div id="app">
+
+<!-- ══ SPLASH ══ -->
+<div id="screen-splash" class="screen active">
+  <span class="compass-icon">🧭</span>
+  <h1 class="splash-title">BR<em>Ú</em>JULA</h1>
+  <div class="divider center"></div>
+  <p class="splash-sub">Foco. Concentración. Plan de acción.<br>Encontrá tu norte antes de salir a la cancha.</p>
+
+  <button class="menu-all" onclick="playAll()">
+    <div style="text-align:left">
+      <div class="ma-name">Recorrido completo</div>
+      <div class="ma-desc">Las 5 estaciones, una atrás de otra</div>
+    </div>
+    <div style="font-size:1.6rem">→</div>
+  </button>
+
+  <div class="sec-label">— o elegí una estación —</div>
+  <div class="module-list">
+    <div class="module" onclick="playSingle(1)">
+      <div class="mod-icon">🎯</div>
+      <div class="mod-body"><div class="mod-name">Radar de Foco</div><div class="mod-desc">¿Dónde está tu atención ahora mismo?</div></div>
+      <div class="mod-tag timed">6 seg</div>
+    </div>
+    <div class="module" onclick="playSingle(2)">
+      <div class="mod-icon">🔭</div>
+      <div class="mod-body"><div class="mod-name">Distancia al Objetivo</div><div class="mod-desc">Metas concretas, sin apuro</div></div>
+      <div class="mod-tag open">Libre</div>
+    </div>
+    <div class="module" onclick="playSingle(3)">
+      <div class="mod-icon">⚡</div>
+      <div class="mod-body"><div class="mod-name">Disparador Rápido</div><div class="mod-desc">Concentración bajo presión</div></div>
+      <div class="mod-tag timed">5 seg</div>
+    </div>
+    <div class="module" onclick="playSingle(4)">
+      <div class="mod-icon">🗺️</div>
+      <div class="mod-body"><div class="mod-name">Plan de Ruta</div><div class="mod-desc">De la meta a la acción concreta</div></div>
+      <div class="mod-tag open">Libre</div>
+    </div>
+    <div class="module" onclick="playSingle(5)">
+      <div class="mod-icon">⚖️</div>
+      <div class="mod-body"><div class="mod-name">Cruce de Caminos</div><div class="mod-desc">Decisiones sobre foco y prioridad</div></div>
+      <div class="mod-tag timed">5 seg</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRANSITIONS ══ -->
+<div id="screen-rt1" class="screen"><div class="rt">
+  <span class="rt-icon">🎯</span><div class="rt-eyebrow">Estación 01</div>
+  <div class="rt-title">Radar de Foco</div>
+  <div class="rt-sub">12 situaciones · 6 segundos cada una</div>
+  <div style="text-align:center"><button class="btn btn-primary" onclick="startRound(1)">Activar radar</button></div>
+</div></div>
+
+<div id="screen-rt2" class="screen"><div class="rt">
+  <span class="rt-icon">🔭</span><div class="rt-eyebrow">Estación 02</div>
+  <div class="rt-title">Distancia al Objetivo</div>
+  <div class="rt-sub">8 preguntas · sin límite de tiempo</div>
+  <div style="text-align:center"><button class="btn btn-primary" onclick="startRound(2)">Empezar a pensar</button></div>
+</div></div>
+
+<div id="screen-rt3" class="screen"><div class="rt">
+  <span class="rt-icon">⚡</span><div class="rt-eyebrow">Estación 03</div>
+  <div class="rt-title">Disparador Rápido</div>
+  <div class="rt-sub">12 situaciones · 5 segundos, sin pensar de más</div>
+  <div style="text-align:center"><button class="btn btn-primary" onclick="startRound(3)">Disparar</button></div>
+</div></div>
+
+<div id="screen-rt4" class="screen"><div class="rt">
+  <span class="rt-icon">🗺️</span><div class="rt-eyebrow">Estación 04</div>
+  <div class="rt-title">Plan de Ruta</div>
+  <div class="rt-sub">6 pasos · armá tu plan de acción real</div>
+  <div style="text-align:center"><button class="btn btn-primary" onclick="startRound(4)">Trazar el plan</button></div>
+</div></div>
+
+<div id="screen-rt5" class="screen"><div class="rt">
+  <span class="rt-icon">⚖️</span><div class="rt-eyebrow">Estación 05</div>
+  <div class="rt-title">Cruce de Caminos</div>
+  <div class="rt-sub">10 dilemas · 5 segundos cada uno</div>
+  <div style="text-align:center"><button class="btn btn-primary" onclick="startRound(5)">Elegir</button></div>
+</div></div>
+
+<!-- ══ R1 — Radar de Foco (timed multiple choice) ══ -->
+<div id="screen-r1" class="screen">
+  <div class="prog-wrap">
+    <div class="prog-top"><span class="eyebrow">Radar de Foco</span><span class="mono" id="r1c" style="font-size:.75rem;color:var(--paper-dim)">1/12</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="r1p" style="width:0%"></div></div>
+  </div>
+  <div class="timer-wrap">
+    <div class="timer-bracket" id="r1t">6</div>
+  </div>
+  <p class="q-text" id="r1q"></p>
+  <div id="r1o"></div>
+</div>
+
+<!-- ══ R2 — Distancia al Objetivo (open, no timer, goal building) ══ -->
+<div id="screen-r2" class="screen">
+  <div class="prog-wrap">
+    <div class="prog-top"><span class="eyebrow">Distancia al Objetivo</span><span class="mono" id="r2c" style="font-size:.75rem;color:var(--paper-dim)">1/8</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="r2p" style="width:0%"></div></div>
+  </div>
+  <div class="notimer-badge">⏸ sin reloj — pensalo bien</div>
+  <p class="q-text" id="r2q"></p>
+  <div id="r2o"></div>
+</div>
+
+<!-- ══ R3 — Disparador Rápido (timed) ══ -->
+<div id="screen-r3" class="screen">
+  <div class="prog-wrap">
+    <div class="prog-top"><span class="eyebrow">Disparador Rápido</span><span class="mono" id="r3c" style="font-size:.75rem;color:var(--paper-dim)">1/12</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="r3p" style="width:0%"></div></div>
+  </div>
+  <div class="timer-wrap">
+    <div class="timer-bracket" id="r3t">5</div>
+  </div>
+  <p class="q-meta" id="r3ctx" style="display:none"></p>
+  <p class="q-text" id="r3q"></p>
+  <div id="r3o"></div>
+</div>
+
+<!-- ══ R4 — Plan de Ruta (open, goal -> obstacle -> action) ══ -->
+<div id="screen-r4" class="screen">
+  <div class="prog-wrap">
+    <div class="prog-top"><span class="eyebrow">Plan de Ruta</span><span class="mono" id="r4c" style="font-size:.75rem;color:var(--paper-dim)">1/6</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="r4p" style="width:0%"></div></div>
+  </div>
+  <div class="notimer-badge">⏸ sin reloj — completá con calma</div>
+  <p class="q-text" id="r4q"></p>
+  <div class="goal-card" id="r4card"></div>
+  <div style="text-align:center;margin-top:16px"><button class="btn btn-primary" id="r4next" onclick="advanceR4()">Siguiente paso →</button></div>
+</div>
+
+<!-- ══ R5 — Cruce de Caminos (timed duel) ══ -->
+<div id="screen-r5" class="screen">
+  <div class="prog-wrap">
+    <div class="prog-top"><span class="eyebrow">Cruce de Caminos</span><span class="mono" id="r5c" style="font-size:.75rem;color:var(--paper-dim)">1/10</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="r5p" style="width:0%"></div></div>
+  </div>
+  <div class="timer-wrap">
+    <div class="timer-bracket" id="r5t">5</div>
+  </div>
+  <div id="r5dw"></div>
+</div>
+
+<!-- ══ RESULTS PER STATION ══ -->
+<div id="screen-res1" class="screen">
+  <span class="res-icon">🎯</span><div class="res-title">Radar completo</div>
+  <div class="res-badge">Radar de Foco · 12 situaciones</div>
+  <div class="divider center"></div>
+  <div class="stats-grid" id="rs1s"></div>
+  <div class="rfx-title">Para pensar</div>
+  <div class="rfx-q"><div class="d"></div><p>¿En qué momentos tu atención se va más rápido a lo externo?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Qué patrón ves entre las respuestas que diste?</p></div>
+  <div class="btn-row" id="rs1b"></div>
+</div>
+
+<div id="screen-res2" class="screen">
+  <span class="res-icon">🔭</span><div class="res-title">Objetivo definido</div>
+  <div class="res-badge">Distancia al Objetivo · 8 preguntas</div>
+  <div class="divider center"></div>
+  <div id="rs2out"></div>
+  <div class="rfx-title">Para pensar</div>
+  <div class="rfx-q"><div class="d"></div><p>¿Esta meta es realmente tuya o de alguien más?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Qué necesitás dejar de hacer para acercarte a ella?</p></div>
+  <div class="btn-row" id="rs2b"></div>
+</div>
+
+<div id="screen-res3" class="screen">
+  <span class="res-icon">⚡</span><div class="res-title">Disparos completos</div>
+  <div class="res-badge">Disparador Rápido · 12 situaciones</div>
+  <div class="divider center"></div>
+  <div class="stats-grid" id="rs3s"></div>
+  <div class="rfx-title">Para pensar</div>
+  <div class="rfx-q"><div class="d"></div><p>¿Cuándo respondiste desde el instinto y cuándo desde el miedo?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Qué situación te gustaría volver a vivir, ahora con calma?</p></div>
+  <div class="btn-row" id="rs3b"></div>
+</div>
+
+<div id="screen-res4" class="screen">
+  <span class="res-icon">🗺️</span><div class="res-title">Ruta trazada</div>
+  <div class="res-badge">Plan de Ruta · tu plan personal</div>
+  <div class="divider center"></div>
+  <div id="rs4out"></div>
+  <div class="rfx-title">Para pensar</div>
+  <div class="rfx-q"><div class="d"></div><p>¿Cuál de estos pasos podés empezar hoy mismo?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Quién puede ayudarte a sostener este plan?</p></div>
+  <div class="btn-row" id="rs4b"></div>
+</div>
+
+<div id="screen-res5" class="screen">
+  <span class="res-icon">⚖️</span><div class="res-title">Cruce resuelto</div>
+  <div class="res-badge">Cruce de Caminos · 10 dilemas</div>
+  <div class="divider center"></div>
+  <div class="stats-grid" id="rs5s"></div>
+  <div class="rfx-title">Para pensar</div>
+  <div class="rfx-q"><div class="d"></div><p>¿Qué dilema te costó más resolver?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Tus elecciones reflejan cómo querés jugar de verdad?</p></div>
+  <div class="btn-row" id="rs5b"></div>
+</div>
+
+<!-- ══ FINAL REPORT ══ -->
+<div id="screen-final" class="screen">
+  <span class="res-icon">🧭</span>
+  <div class="res-title">Mapa Final</div>
+  <div class="divider center"></div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('g')">General</button>
+    <button class="tab" onclick="switchTab('r1')">01</button>
+    <button class="tab" onclick="switchTab('r2')">02</button>
+    <button class="tab" onclick="switchTab('r3')">03</button>
+    <button class="tab" onclick="switchTab('r4')">04</button>
+    <button class="tab" onclick="switchTab('r5')">05</button>
+  </div>
+  <div id="tab-g">
+    <div class="stats-grid" id="fg"></div>
+  </div>
+  <div id="tab-r1" style="display:none"><div class="res-badge">Radar de Foco</div><div class="stats-grid" id="fr1"></div></div>
+  <div id="tab-r2" style="display:none"><div class="res-badge">Distancia al Objetivo</div><div id="fr2"></div></div>
+  <div id="tab-r3" style="display:none"><div class="res-badge">Disparador Rápido</div><div class="stats-grid" id="fr3"></div></div>
+  <div id="tab-r4" style="display:none"><div class="res-badge">Plan de Ruta</div><div id="fr4"></div></div>
+  <div id="tab-r5" style="display:none"><div class="res-badge">Cruce de Caminos</div><div class="stats-grid" id="fr5"></div></div>
+
+  <div class="rfx-title">Cierre de la sesión</div>
+  <div class="rfx-q"><div class="d"></div><p>¿Qué descubriste hoy sobre dónde está tu foco?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Qué meta quedó más clara después de este recorrido?</p></div>
+  <div class="rfx-q"><div class="d"></div><p>¿Cuál es el primer paso concreto que vas a dar esta semana?</p></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="resetGame()">↺ Volver a empezar</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+<script>
+/* ════════ DATA ════════ */
+const D = {
+  r1:{ time:6, qs:[
+    {q:"Estas por sacar un tiro libre y el rival te grita algo desde el banco. Tu atencion va a:",a:["El aro, mi rutina de siempre","Lo que me grito, sin querer","Mi respiracion","La gente alrededor"]},
+    {q:"Tu entrenador te explica una jugada nueva en el huddle. Tu mente esta:",a:["100% en sus palabras","Pensando en el error que acabo de cometer","Mirando al banco rival","Repasando la jugada mentalmente"]},
+    {q:"Faltan 10 segundos y tenes que defender al mejor anotador del equipo rival. Tu foco esta en:",a:["Sus pies y su cadera","El marcador del partido","Lo que va a pensar la gente si me la pasa","Mi propia respiracion"]},
+    {q:"Acabas de perder la pelota en un pase facil. Los proximos 5 segundos tu cabeza esta en:",a:["La proxima jugada","El error que cometi","Lo que va a decir el entrenador","Nada en particular, en blanco"]},
+    {q:"Estas calentando antes del partido. ¿Donde esta tu cabeza la mayor parte del tiempo?",a:["En mi cuerpo y mis movimientos","En el rival que voy a enfrentar","En las redes sociales o el celular","En charlar con mis compañeros"]},
+    {q:"El arbitro cobra una falta dudosa en tu contra. Tu atencion se va a:",a:["La siguiente jugada","Reclamarle al arbitro","Lo que penso el publico","Mi compañero que tambien protesta"]},
+    {q:"Estas en el banco esperando para entrar. ¿En que estas pensando?",a:["Estudiando el partido para entrar listo","En que no me llaman","En otra cosa, distraido","En mis estadisticas personales"]},
+    {q:"Tu equipo armo una jugada para vos en el ultimo segundo. Mientras te preparas pensas en:",a:["Ejecutar el movimiento, paso a paso","Que pasa si fallo","En que todos me estan mirando","En el resultado final del partido"]},
+    {q:"Un companero te grita algo enojado en medio de la jugada. ¿A donde va tu atencion?",a:["Sigo con la jugada","A lo que me dijo","A defenderme verbalmente","A mirarlo con bronca"]},
+    {q:"Estas exhausto en el cuarto periodo. ¿En que se centra tu mente?",a:["En la siguiente accion, nada mas","En cuanto falta para que termine","En el cansancio fisico","En si voy a poder seguir"]},
+    {q:"Ves a un familiar entre el publico justo antes de un tiro importante. Tu foco:",a:["Vuelve al aro enseguida","Se queda un segundo de mas en la tribuna","Se desvia completamente","Ni lo note, estaba en la jugada"]},
+    {q:"Suena tu telefono en el vestuario 10 minutos antes de salir a la cancha. ¿Que haces con tu atencion?",a:["Lo ignoro, sigo con mi rutina","Lo miro rapido por las dudas","Me distraigo pensando que sera","Lo apago y me reconcentro"]},
+  ]},
+  r2:{ qs:[
+    {q:"Pensa en el proximo torneo o partido importante. En una frase, ¿que resultado queres lograr?",ph:"Ej: Llegar a la final y jugar mi mejor basquet"},
+    {q:"¿Por que esta meta te importa de verdad, mas alla del resultado?",ph:"Ej: Porque demuestra todo lo que entrene este año"},
+    {q:"Si tuvieras que medir tu progreso hacia esa meta hoy, en una escala de 1 a 10, ¿donde estas?",ph:"Ej: Estoy en un 6, mejorando pero con cosas pendientes"},
+    {q:"¿Que obstaculo interno (mental, emocional) es el que mas te frena hoy?",ph:"Ej: Los nervios antes de partidos importantes"},
+    {q:"¿Que obstaculo externo (entrenamiento, tiempo, contexto) es el que mas te frena?",ph:"Ej: No tengo suficientes minutos de juego para mostrar lo que se"},
+    {q:"Si lograras esta meta, ¿que cambiaria en tu dia a dia como jugador?",ph:"Ej: Tendria mas confianza para el año que viene"},
+    {q:"¿Quien podria ayudarte a sostener el camino hacia esta meta?",ph:"Ej: Mi entrenador, mi familia, un compañero de confianza"},
+    {q:"Si esta meta fuera un partido, ¿en que minuto estas jugando ahora mismo?",ph:"Ej: Estoy en el segundo cuarto, recien arrancando en serio"},
+  ]},
+  r3:{ time:5, qs:[
+    {ctx:"Cuarto final. Empate. Pelota en tus manos a 3 segundos del final.",q:"¿Tirás o pasás?",a:["Tiro, confio en mi","Paso, busco al mas libre","Ataco el aro","Pido tiempo si se puede"]},
+    {ctx:"El entrenador te saca del partido sin avisar en un momento clave.",q:"¿Que haces en el banco?",a:["Aplaudo y apoyo desde afuera","Me quedo en silencio, dolido","Le pregunto por que apenas pueda","Me preparo para volver a entrar mejor"]},
+    {ctx:"Vas perdiendo por 20 puntos en el ultimo cuarto.",q:"¿Como jugas los proximos minutos?",a:["Con la misma intensidad de siempre","Pensando en el proximo partido","Buscando aprender algo de la derrota","Bajando el ritmo, ya esta decidido"]},
+    {ctx:"Tu rival directo te hace una falta dura a proposito.",q:"¿Que haces?",a:["Sigo jugando, no le doy entidad","Le devuelvo la intensidad en la jugada","Hablo con el arbitro","Me caliento y se lo digo"]},
+    {ctx:"Estas en una mala racha de 4 partidos sin tu nivel habitual.",q:"¿Que haces antes del proximo partido?",a:["Repaso lo que vengo haciendo bien","Trato de no pensarlo y salgo a jugar","Hablo con el entrenador o un referente","Entreno el doble esta semana"]},
+    {ctx:"Tenes la chance de ser titular pero un compañero mayor queria ese lugar.",q:"¿Como lo manejas?",a:["Juego mi partido, es una decision del coach","Hablo con el antes para que no haya tensión","Me siento culpable y juego con dudas","Aprovecho la oportunidad al maximo"]},
+    {ctx:"En el entretiempo el equipo esta discutiendo por errores propios.",q:"¿Que haces?",a:["Trato de calmar y unir al grupo","Me quedo afuera de la discusion","Doy mi opinion con firmeza","Me enfoco en mi propio segundo tiempo"]},
+    {ctx:"Faltan 30 segundos, tu equipo gana por 1 y tenes que defender la ultima jugada.",q:"¿En que te concentras?",a:["En la posicion de mis pies y manos","En no cometer una falta tonta","En el reloj que corre","En ayudar a mis compañeros a marcar"]},
+    {ctx:"Tu mejor amigo en el equipo esta jugando muy mal el partido de hoy.",q:"¿Que haces en la cancha?",a:["Le doy una palabra de aliento rapida","Sigo concentrado en mi juego","Trato de cubrirlo tacticamente","Hablo con el entrenador para ayudarlo"]},
+    {ctx:"Estas a punto de batir tu récord personal de puntos en un partido.",q:"¿Como te sentis los ultimos minutos?",a:["Igual que siempre, foco en el equipo","Con ganas de seguir sumando puntos","Nervioso por no arruinarlo","Orgulloso, disfrutando el momento"]},
+    {ctx:"El equipo rival empieza a remontar un partido que tenian ganado.",q:"¿Cual es tu primera reaccion?",a:["Pido que volvamos a lo basico","Me pongo mas intenso individualmente","Hablo fuerte para motivar al equipo","Mantengo la calma, confio en el plan"]},
+    {ctx:"Tenes un examen importante al dia siguiente de un partido decisivo.",q:"¿Como manejas la semana?",a:["Organizo tiempos para ambas cosas","Priorizo el partido, despues estudio","Priorizo el examen, juego mas relajado","Me estreso por las dos cosas a la vez"]},
+  ]},
+  r4:[
+    {label:"Meta principal", prompt:"Escribi en una frase la meta deportiva mas importante que tenes para los proximos 3 meses.", ph:"Ej: Ser titular fijo en el equipo"},
+    {label:"Por que importa", prompt:"¿Por que esta meta es importante para vos, mas alla de lo que piensen otros?", ph:"Ej: Porque quiero demostrarme que puedo"},
+    {label:"Obstaculo principal", prompt:"¿Cual es el obstaculo mas grande que te separa de esa meta hoy?", ph:"Ej: Mi consistencia en los entrenamientos"},
+    {label:"Primera accion", prompt:"¿Cual es UNA accion concreta que podes hacer esta semana para acercarte?", ph:"Ej: Llegar 15 minutos antes a cada entrenamiento"},
+    {label:"Quien te acompaña", prompt:"¿A quien le vas a contar este plan para que te ayude a sostenerlo?", ph:"Ej: Mi entrenador, en la proxima charla individual"},
+    {label:"Señal de progreso", prompt:"¿Como vas a saber, en un mes, que estas en el camino correcto?", ph:"Ej: Si el entrenador me da mas minutos de confianza"},
+  ],
+  r5:{ time:5, qs:[
+    ["Foco total","Libertad mental"],
+    ["Meta a largo plazo","Victoria de hoy"],
+    ["Plan fijo","Adaptarme sobre la marcha"],
+    ["Disciplina diaria","Motivacion del momento"],
+    ["Mi version ideal","Mi version real de hoy"],
+    ["Resultado","Proceso"],
+    ["Concentrarme en mi","Concentrarme en el equipo"],
+    ["Avanzar rapido","Avanzar firme"],
+    ["Plan A siempre","Plan B si hace falta"],
+    ["Hacerlo perfecto","Hacerlo y aprender"],
+  ]}
+};
+
+/* ════════ STATE ════════ */
+let G={};
+function resetG(){
+  G={mode:null,single:null,q:0,ti:null,
+    r1:{times:[],dec:0},
+    r2:{answers:[]},
+    r3:{times:[],dec:0},
+    r4:{answers:[]},
+    r5:{times:[],dec:0}};
+}
+resetG();
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cd(from,cb){
+  const ov=document.getElementById('cdOverlay'),ne=document.getElementById('cdNum');
+  ov.classList.add('on'); let n=from; ne.textContent=n;
+  const t=setInterval(()=>{
+    n--;
+    if(n<=0){clearInterval(t);ov.classList.remove('on');cb();}
+    else{ne.textContent=n;ne.style.animation='none';void ne.offsetWidth;ne.style.animation='popIn .5s cubic-bezier(.17,.67,.4,1.4)';}
+  },800);
+}
+
+function playAll(){resetG();G.mode='all';show('rt1');}
+function playSingle(n){resetG();G.mode='single';G.single=n;show('rt'+n);}
+function resetGame(){resetG();show('splash');}
+function startRound(n){G.q=0;cd(3,()=>{show('r'+n);window[['','nextQ1','nextQ2','nextQ3','nextQ4','nextQ5'][n]]();});}
+function afterRound(n){
+  stopT();
+  if(G.mode==='single'){buildSingle(n);show('res'+n);}
+  else{n<5?show('rt'+(n+1)):buildFinal();}
+}
+
+/* ════════ TIMER (bracket style, no SVG) ════════ */
+function startT(sec,numId,onEnd){
+  stopT();
+  const num=document.getElementById(numId);
+  let t=sec;
+  num.className='timer-bracket';
+  num.textContent=t;
+  G.qs=Date.now();
+  G.ti=setInterval(()=>{
+    t-=.1;
+    const r=Math.ceil(t);
+    num.textContent=r>0?r:0;
+    if(t<=sec*.5)num.className='timer-bracket warn';
+    if(t<=sec*.25)num.className='timer-bracket danger';
+    if(t<=0){clearInterval(G.ti);onEnd();}
+  },100);
+}
+function stopT(){clearInterval(G.ti);}
+function recT(rk){const e=(Date.now()-G.qs)/1000;G[rk].times.push(e);G[rk].dec++;}
+
+/* ════════ R1 — Radar de Foco ════════ */
+function nextQ1(){
+  const qs=D.r1.qs; if(G.q>=qs.length){afterRound(1);return;}
+  const q=qs[G.q],tot=qs.length;
+  document.getElementById('r1c').textContent=`${G.q+1}/${tot}`;
+  document.getElementById('r1p').style.width=`${(G.q/tot)*100}%`;
+  document.getElementById('r1q').textContent=q.q;
+  const o=document.getElementById('r1o');o.innerHTML='';
+  const pick=()=>{stopT();recT('r1');G.q++;nextQ1();};
+  q.a.forEach(a=>{const b=document.createElement('button');b.className='btn-answer';b.textContent=a;b.onclick=pick;o.appendChild(b);});
+  startT(D.r1.time,'r1t',pick);
+}
+
+/* ════════ R2 — Distancia al Objetivo (open, no timer) ════════ */
+function nextQ2(){
+  const qs=D.r2.qs; if(G.q>=qs.length){afterRound(2);return;}
+  const q=qs[G.q],tot=qs.length;
+  document.getElementById('r2c').textContent=`${G.q+1}/${tot}`;
+  document.getElementById('r2p').style.width=`${(G.q/tot)*100}%`;
+  document.getElementById('r2q').textContent=q.q;
+  const o=document.getElementById('r2o');o.innerHTML='';
+  const ta=document.createElement('textarea');
+  ta.className='goal-input';ta.rows=3;ta.placeholder=q.ph;
+  o.appendChild(ta);
+  const btn=document.createElement('button');
+  btn.className='btn btn-primary';btn.style.marginTop='14px';btn.textContent='Siguiente →';
+  btn.onclick=()=>{
+    G.r2.answers.push(ta.value.trim()||'(sin respuesta)');
+    G.q++;nextQ2();
+  };
+  o.appendChild(btn);
+}
+
+/* ════════ R3 — Disparador Rapido (timed, with context) ════════ */
+function nextQ3(){
+  const qs=D.r3.qs; if(G.q>=qs.length){afterRound(3);return;}
+  const q=qs[G.q],tot=qs.length;
+  document.getElementById('r3c').textContent=`${G.q+1}/${tot}`;
+  document.getElementById('r3p').style.width=`${(G.q/tot)*100}%`;
+  const ctx=document.getElementById('r3ctx');
+  if(q.ctx){ctx.style.display='block';ctx.textContent=q.ctx;}else ctx.style.display='none';
+  document.getElementById('r3q').textContent=q.q;
+  const o=document.getElementById('r3o');o.innerHTML='';
+  const pick=()=>{stopT();recT('r3');G.q++;nextQ3();};
+  q.a.forEach(a=>{const b=document.createElement('button');b.className='btn-answer';b.textContent=a;b.onclick=pick;o.appendChild(b);});
+  startT(D.r3.time,'r3t',pick);
+}
+
+/* ════════ R4 — Plan de Ruta (open, sequential builder) ════════ */
+function nextQ4(){
+  const qs=D.r4; if(G.q>=qs.length){afterRound(4);return;}
+  const q=qs[G.q],tot=qs.length;
+  document.getElementById('r4c').textContent=`${G.q+1}/${tot}`;
+  document.getElementById('r4p').style.width=`${(G.q/tot)*100}%`;
+  document.getElementById('r4q').textContent=q.prompt;
+  const card=document.getElementById('r4card');
+  card.innerHTML=`<div class="goal-label">${q.label}</div><textarea class="goal-input" id="r4ta" rows="3" placeholder="${q.ph}"></textarea>`;
+}
+function advanceR4(){
+  const ta=document.getElementById('r4ta');
+  G.r4.answers.push(ta?ta.value.trim()||'(sin respuesta)':'(sin respuesta)');
+  G.q++;nextQ4();
+}
+
+/* ════════ R5 — Cruce de Caminos (timed duel) ════════ */
+function nextQ5(){
+  const qs=D.r5.qs; if(G.q>=qs.length){afterRound(5);return;}
+  const tot=qs.length,q=qs[G.q];
+  document.getElementById('r5c').textContent=`${G.q+1}/${tot}`;
+  document.getElementById('r5p').style.width=`${(G.q/tot)*100}%`;
+  const w=document.getElementById('r5dw');w.innerHTML='';
+  const g=document.createElement('div');g.className='duel-grid';
+  const pick=()=>{
+    stopT();recT('r5');G.q++;
+    w.style.transition='opacity .2s,transform .2s';w.style.opacity='0';w.style.transform='scale(.95)';
+    setTimeout(()=>{w.style.opacity='1';w.style.transform='';nextQ5();},220);
+  };
+  q.forEach(opt=>{
+    const b=document.createElement('button');b.className='btn-duel';b.textContent=opt;b.onclick=pick;g.appendChild(b);
+  });
+  const vs=document.createElement('div');vs.className='vs-badge';vs.textContent='VS';
+  g.insertBefore(vs,g.children[1]);
+  w.appendChild(g);w.style.opacity='1';w.style.transform='';w.style.transition='opacity .2s,transform .2s';
+  startT(D.r5.time,'r5t',pick);
+}
+
+/* ════════ STATS HELPERS ════════ */
+function calcS(rk){
+  const t=G[rk].times;
+  if(!t.length)return{total:0,avg:'–',fast:0,slow:0};
+  const avg=(t.reduce((a,b)=>a+b,0)/t.length).toFixed(1);
+  return{total:G[rk].dec,avg,fast:t.filter(x=>x<2).length,slow:t.filter(x=>x>4).length};
+}
+function sHTML(s){return`
+  <div class="stat-box"><div class="stat-num">${s.total}</div><div class="stat-lbl">Decisiones</div></div>
+  <div class="stat-box"><div class="stat-num">${s.avg}s</div><div class="stat-lbl">Tiempo promedio</div></div>
+  <div class="stat-box"><div class="stat-num">${s.fast}</div><div class="stat-lbl">Antes de 2 seg</div></div>
+  <div class="stat-box"><div class="stat-num">${s.slow}</div><div class="stat-lbl">Mas de 4 seg</div></div>`;
+}
+function answersHTML(answers,labels){
+  return answers.map((a,i)=>`
+    <div class="action-output">
+      <div class="ao-label">${labels[i]||('Respuesta '+(i+1))}</div>
+      <div class="ao-text">${a||'<em style="opacity:.5">(sin respuesta)</em>'}</div>
+    </div>`).join('');
+}
+
+function buildSingle(n){
+  const set=(id,html)=>{const el=document.getElementById(id);if(el)el.innerHTML=html;};
+  if(n===1){set('rs1s',sHTML(calcS('r1')));}
+  else if(n===2){
+    set('rs2out',answersHTML(G.r2.answers,D.r2.qs.map(q=>q.q.length>40?q.q.substring(0,40)+'...':q.q)));
+  }
+  else if(n===3){set('rs3s',sHTML(calcS('r3')));}
+  else if(n===4){
+    set('rs4out',answersHTML(G.r4.answers,D.r4.map(q=>q.label)));
+  }
+  else if(n===5){set('rs5s',sHTML(calcS('r5')));}
+  const btns=document.getElementById('rs'+n+'b');
+  if(btns){btns.innerHTML='';
+    const a=document.createElement('button');a.className='btn btn-primary';a.textContent='↺ Repetir esta estacion';
+    a.onclick=()=>playSingle(n);btns.appendChild(a);
+    const b=document.createElement('button');b.className='btn btn-ghost';b.textContent='← Mapa general';
+    b.onclick=resetGame;btns.appendChild(b);}
+}
+
+function buildFinal(){
+  const allTimed=[...G.r1.times,...G.r3.times,...G.r5.times];
+  const totDec=G.r1.dec+G.r3.dec+G.r5.dec;
+  const avg=allTimed.length?(allTimed.reduce((a,b)=>a+b,0)/allTimed.length).toFixed(1):'–';
+  document.getElementById('fg').innerHTML=`
+    <div class="stat-box"><div class="stat-num">${totDec}</div><div class="stat-lbl">Decisiones rapidas</div></div>
+    <div class="stat-box"><div class="stat-num">${avg}s</div><div class="stat-lbl">Tiempo promedio</div></div>
+    <div class="stat-box"><div class="stat-num">${G.r2.answers.length}</div><div class="stat-lbl">Reflexiones de meta</div></div>
+    <div class="stat-box"><div class="stat-num">${G.r4.answers.length}</div><div class="stat-lbl">Pasos del plan</div></div>`;
+  document.getElementById('fr1').innerHTML=sHTML(calcS('r1'));
+  document.getElementById('fr2').innerHTML=answersHTML(G.r2.answers,D.r2.qs.map(q=>q.q.length>40?q.q.substring(0,40)+'...':q.q));
+  document.getElementById('fr3').innerHTML=sHTML(calcS('r3'));
+  document.getElementById('fr4').innerHTML=answersHTML(G.r4.answers,D.r4.map(q=>q.label));
+  document.getElementById('fr5').innerHTML=sHTML(calcS('r5'));
+  show('final');
+}
+
+function switchTab(n){
+  ['g','r1','r2','r3','r4','r5'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===n?'block':'none';});
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    b.classList.toggle('active',['g','r1','r2','r3','r4','r5'][i]===n);});
+}
+</script>
+</body>
+</html>
